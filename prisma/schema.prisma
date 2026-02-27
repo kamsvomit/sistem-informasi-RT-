@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Warga {
+  id                String   @id @default(uuid())
+  noKK              String
+  nik               String   @unique
+  namaLengkap       String
+  jenisKelamin      String
+  tempatLahir       String
+  tanggalLahir      String
+  agama             String
+  pekerjaan         String
+  statusPerkawinan  String
+  noHP              String
+  isKepalaKeluarga  Boolean  @default(false)
+  role              String   @default("Warga")
+  email             String?  @unique
+  password          String?
+  fotoProfil        String?
+  statusKependudukan String? @default("AKTIF")
+  statusTinggal     String?
+  alamatRumah       String?
+  alamatKTP         String?
+  namaPemilikRumah  String?
+  kontakPemilikRumah String?
+  fotoKTP           String?
+  fotoKK            String?
+  isVerified        Boolean  @default(false)
+  isDataComplete    Boolean  @default(false)
+  isPenerimaBansos  Boolean  @default(false)
+  joinedAt          String?
+  
+  // Relations
+  keuangan          Keuangan[]
+  aspirasi          Aspirasi[]
+  surat             SuratPengantar[]
+  notifications     UserNotification[]
+  logs              ActivityLog[]
+  peristiwa         Peristiwa[]
+  wakafTransaksi    WakafTransaksi[]
+  umkmProducts      UMKMProduct[]
+  bansos            BansosDistribution[]
+}
+
+model Keuangan {
+  id                String   @id @default(uuid())
+  tanggal           String
+  tipe              String   // PEMASUKAN | PENGELUARAN
+  kategori          String
+  jumlah            Float
+  keterangan        String
+  metodePembayaran  String?
+  status            String?  @default("LUNAS")
+  fotoBukti         String?
+  alasanPenolakan   String?
+  
+  wargaId           String?
+  warga             Warga?   @relation(fields: [wargaId], references: [id])
+}
+
+model SuratPengantar {
+  id            String   @id @default(uuid())
+  wargaId       String
+  warga         Warga    @relation(fields: [wargaId], references: [id])
+  jenisSurat    String
+  keperluan     String
+  tanggalDibuat String
+  kontenAI      String?
+}
+
+model Pengumuman {
+  id       String   @id @default(uuid())
+  judul    String
+  isi      String
+  tanggal  String
+  penulis  String
+  penting  Boolean  @default(false)
+}
+
+model Aspirasi {
+  id       String   @id @default(uuid())
+  wargaId  String
+  warga    Warga    @relation(fields: [wargaId], references: [id])
+  pengirim String
+  isi      String
+  tanggal  String
+  status   String   @default("BARU")
+}
+
+model UserNotification {
+  id      String   @id @default(uuid())
+  userId  String
+  user    Warga    @relation(fields: [userId], references: [id])
+  pesan   String
+  tipe    String
+  isRead  Boolean  @default(false)
+  tanggal String
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      Warga    @relation(fields: [userId], references: [id])
+  aktivitas String
+  timestamp String
+}
+
+model Peristiwa {
+  id               String   @id @default(uuid())
+  wargaId          String
+  warga            Warga    @relation(fields: [wargaId], references: [id])
+  jenisPeristiwa   String
+  tanggalPeristiwa String
+  keterangan       String
+  dicatatOleh      String
+  dokumenPendukung String?
+  createdAt        String
+}
+
+model WakafProgram {
+  id          String   @id @default(uuid())
+  judul       String
+  deskripsi   String
+  targetDana  Float
+  terkumpul   Float    @default(0)
+  deadline    String?
+  imageUrl    String?
+  status      String   @default("AKTIF")
+  kategori    String
+  
+  transaksi   WakafTransaksi[]
+}
+
+model WakafTransaksi {
+  id           String   @id @default(uuid())
+  programId    String
+  program      WakafProgram @relation(fields: [programId], references: [id])
+  wargaId      String
+  warga        Warga    @relation(fields: [wargaId], references: [id])
+  namaDonatur  String
+  jumlah       Float
+  tanggal      String
+  metode       String
+  fotoBukti    String?
+  status       String   @default("MENUNGGU_VERIFIKASI")
+  doa          String?
+  isAnonim     Boolean  @default(false)
+}
+
+model UMKMProduct {
+  id          String   @id @default(uuid())
+  sellerId    String
+  seller      Warga    @relation(fields: [sellerId], references: [id])
+  sellerName  String
+  name        String
+  description String
+  price       Float
+  category    String
+  imageUrl    String?
+  whatsapp    String
+  isAvailable Boolean  @default(true)
+  createdAt   String
+}
+
+model BansosDistribution {
+  id               String   @id @default(uuid())
+  wargaId          String
+  warga            Warga    @relation(fields: [wargaId], references: [id])
+  jenisBansos      String
+  periode          String
+  tanggalSalur     String
+  jumlah           Float
+  keterangan       String?
+  petugasPenyalur  String
+  buktiDokumentasi String?
+}
+
+model RTProfile {
+  id        Int      @id @default(1)
+  deskripsi String?
+  visi      String
+  misi      String   // JSON string of array
+  sejarah   String
+  ketuaRT   String
+  sekretaris String
+  bendahara String
+  seksi     String   // JSON string of array
+}
+
+model AppConfig {
+  id              Int      @id @default(1)
+  appName         String
+  regionName      String
+  heroDescription String
+  logoUrl         String?
+  iuranBesaran    Float?
+  iuranNama       String?
+}

@@ -551,85 +551,57 @@ const ComingSoonView: React.FC<{ title: string; description: string }> = ({ titl
 
 const App: React.FC = () => {
   // --- Data State ---
-  const [appConfig, setAppConfig] = useState<AppConfig>(() => {
-    const saved = localStorage.getItem('simrt_config');
-    return saved ? JSON.parse(saved) : INITIAL_APP_CONFIG;
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [appConfig, setAppConfig] = useState<AppConfig>(INITIAL_APP_CONFIG);
+  const [wargaList, setWargaList] = useState<Warga[]>([]);
+  const [keuanganList, setKeuanganList] = useState<Keuangan[]>([]);
+  const [aspirasiList, setAspirasiList] = useState<Aspirasi[]>([]);
+  const [rtProfileData, setRTProfileData] = useState<RTProfileData>(INITIAL_RT_PROFILE);
+  const [galeriList, setGaleriList] = useState<GaleriItem[]>([]);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [requests, setRequests] = useState<ChangeRequest[]>([]);
+  const [peristiwaList, setPeristiwaList] = useState<Peristiwa[]>([]);
+  const [pengumumanList, setPengumumanList] = useState<Pengumuman[]>([]);
+  const [undanganList, setUndanganList] = useState<UndanganAcara[]>([]);
+  const [wakafPrograms, setWakafPrograms] = useState<WakafProgram[]>(INITIAL_WAKAF_PROGRAMS);
+  const [wakafTransactions, setWakafTransactions] = useState<WakafTransaksi[]>(INITIAL_WAKAF_TRANSACTIONS);
+  const [umkmList, setUmkmList] = useState<UMKMProduct[]>(INITIAL_UMKM_PRODUCTS);
+  const [bansosDistributions, setBansosDistributions] = useState<BansosDistribution[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
-  const [wargaList, setWargaList] = useState<Warga[]>(() => {
-    const saved = localStorage.getItem('simrt_warga');
-    return saved ? JSON.parse(saved) : INITIAL_WARGA;
-  });
+  // --- Fetch Data from Backend ---
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [wargaRes, keuanganRes, pengumumanRes, aspirasiRes] = await Promise.all([
+          fetch('/api/warga'),
+          fetch('/api/keuangan'),
+          fetch('/api/pengumuman'),
+          fetch('/api/aspirasi')
+        ]);
 
-  const [keuanganList, setKeuanganList] = useState<Keuangan[]>(() => {
-    const saved = localStorage.getItem('simrt_keuangan');
-    return saved ? JSON.parse(saved) : INITIAL_KEUANGAN;
-  });
+        if (wargaRes.ok) setWargaList(await wargaRes.json());
+        if (keuanganRes.ok) setKeuanganList(await keuanganRes.json());
+        if (pengumumanRes.ok) setPengumumanList(await pengumumanRes.json());
+        if (aspirasiRes.ok) setAspirasiList(await aspirasiRes.json());
+        
+        // Fallback for others if not implemented in API yet
+        const savedConfig = localStorage.getItem('simrt_config');
+        if (savedConfig) setAppConfig(JSON.parse(savedConfig));
+        
+        const savedProfile = localStorage.getItem('simrt_profile');
+        if (savedProfile) setRTProfileData(JSON.parse(savedProfile));
 
-  const [aspirasiList, setAspirasiList] = useState<Aspirasi[]>(() => {
-    const saved = localStorage.getItem('simrt_aspirasi');
-    return saved ? JSON.parse(saved) : INITIAL_ASPIRASI;
-  });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [rtProfileData, setRTProfileData] = useState<RTProfileData>(() => {
-    const saved = localStorage.getItem('simrt_profile');
-    return saved ? JSON.parse(saved) : INITIAL_RT_PROFILE;
-  });
-
-  const [galeriList, setGaleriList] = useState<GaleriItem[]>(() => {
-    const saved = localStorage.getItem('simrt_galeri');
-    return saved ? JSON.parse(saved) : INITIAL_GALERI;
-  });
-  
-  const [notifications, setNotifications] = useState<UserNotification[]>(() => {
-    const saved = localStorage.getItem('simrt_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-  });
-
-  const [requests, setRequests] = useState<ChangeRequest[]>(() => {
-    const saved = localStorage.getItem('simrt_requests');
-    return saved ? JSON.parse(saved) : INITIAL_REQUESTS;
-  });
-
-  const [peristiwaList, setPeristiwaList] = useState<Peristiwa[]>(() => {
-    const saved = localStorage.getItem('simrt_peristiwa');
-    return saved ? JSON.parse(saved) : INITIAL_PERISTIWA;
-  });
-
-  const [pengumumanList, setPengumumanList] = useState<Pengumuman[]>(() => {
-    const saved = localStorage.getItem('simrt_pengumuman');
-    return saved ? JSON.parse(saved) : INITIAL_PENGUMUMAN;
-  });
-
-  const [undanganList, setUndanganList] = useState<UndanganAcara[]>(() => {
-    const saved = localStorage.getItem('simrt_undangan');
-    return saved ? JSON.parse(saved) : INITIAL_UNDANGAN;
-  });
-
-  const [wakafPrograms, setWakafPrograms] = useState<WakafProgram[]>(() => {
-    const saved = localStorage.getItem('simrt_wakaf_programs');
-    return saved ? JSON.parse(saved) : INITIAL_WAKAF_PROGRAMS;
-  });
-
-  const [wakafTransactions, setWakafTransactions] = useState<WakafTransaksi[]>(() => {
-    const saved = localStorage.getItem('simrt_wakaf_transactions');
-    return saved ? JSON.parse(saved) : INITIAL_WAKAF_TRANSACTIONS;
-  });
-
-  const [umkmList, setUmkmList] = useState<UMKMProduct[]>(() => {
-    const saved = localStorage.getItem('simrt_umkm');
-    return saved ? JSON.parse(saved) : INITIAL_UMKM_PRODUCTS;
-  });
-
-  const [bansosDistributions, setBansosDistributions] = useState<BansosDistribution[]>(() => {
-    const saved = localStorage.getItem('simrt_bansos');
-    return saved ? JSON.parse(saved) : INITIAL_BANSOS_DISTRIBUTIONS;
-  });
-
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    const saved = localStorage.getItem('simrt_logs');
-    return saved ? JSON.parse(saved) : INITIAL_LOGS;
-  });
+    fetchData();
+  }, []);
 
   // --- Auth & View State ---
   const [appState, setAppState] = useState<'LANDING' | 'LOGIN' | 'REGISTER' | 'APP'>('LANDING');
@@ -721,9 +693,21 @@ const App: React.FC = () => {
     setActivityLogs(prev => [newLog, ...prev]);
   };
 
-  const handleUpdateWarga = (updatedWarga: Warga) => { 
-    setWargaList(wargaList.map(w => w.id === updatedWarga.id ? updatedWarga : w)); 
-    handleShowToast("Data profil berhasil diperbarui.", "success");
+  const handleUpdateWarga = async (updatedWarga: Warga) => { 
+    try {
+      const res = await fetch(`/api/warga/${updatedWarga.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedWarga)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWargaList(wargaList.map(w => w.id === data.id ? data : w)); 
+        handleShowToast("Data profil berhasil diperbarui.", "success");
+      }
+    } catch (error) {
+      handleShowToast("Gagal memperbarui data.", "error");
+    }
   };
 
   const handleApproveAccount = (warga: Warga) => {
@@ -756,8 +740,32 @@ const App: React.FC = () => {
       handleShowToast(`Persetujuan akun ${warga.namaLengkap} ditolak.`, 'error');
   };
 
-  const handleAddTransaksi = (trx: Keuangan) => setKeuanganList(prev => [...prev, trx]);
-  const handleDeleteTransaksi = (id: string) => setKeuanganList(keuanganList.filter(k => k.id !== id));
+  const handleAddTransaksi = async (trx: Keuangan) => {
+    try {
+      const res = await fetch('/api/keuangan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(trx)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setKeuanganList(prev => [data, ...prev]);
+      }
+    } catch (error) {
+      handleShowToast("Gagal menyimpan transaksi.", "error");
+    }
+  };
+
+  const handleDeleteTransaksi = async (id: string) => {
+    try {
+      const res = await fetch(`/api/keuangan/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setKeuanganList(keuanganList.filter(k => k.id !== id));
+      }
+    } catch (error) {
+      handleShowToast("Gagal menghapus transaksi.", "error");
+    }
+  };
   const handleAddAspirasi = (item: Aspirasi) => setAspirasiList([item, ...aspirasiList]);
   
   // Fix: Added missing handleAddRequest function to manage ChangeRequest submissions.
@@ -829,11 +837,23 @@ const App: React.FC = () => {
         <AuthScreen 
           initialMode={appState}
           onLogin={(id) => { setCurrentUserId(id); setAppState('APP'); setCurrentView("DASHBOARD"); }} 
-          onRegister={(w) => { 
-              setWargaList([...wargaList, w]); 
-              setCurrentUserId(w.id); 
-              setAppState('APP'); 
-              setCurrentView("PROFIL_SAYA"); 
+          onRegister={async (w) => { 
+              try {
+                const res = await fetch('/api/warga', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(w)
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  setWargaList([...wargaList, data]); 
+                  setCurrentUserId(data.id); 
+                  setAppState('APP'); 
+                  setCurrentView("PROFIL_SAYA"); 
+                }
+              } catch (error) {
+                handleShowToast("Gagal mendaftar.", "error");
+              }
           }}
           onResetPassword={handleResetPassword}
           wargaList={wargaList} 
@@ -866,7 +886,24 @@ const App: React.FC = () => {
             onApproveWarga={handleApproveAccount}
             onRejectWarga={handleRejectAccount}
         />;
-      case 'DATA_WARGA': return <CitizenManagement wargaList={wargaList} requests={requests} currentUser={currentUser} onAddWarga={(w) => setWargaList([...wargaList, w])} onUpdateWarga={handleUpdateWarga} onDeleteWarga={(id) => setWargaList(wargaList.filter(w => w.id !== id))} onUpdateRequestStatus={handleUpdateRequestStatus} onShowToast={handleShowToast} onNavigate={setCurrentView} onLogActivity={handleAddLog} />;
+      case 'DATA_WARGA': return <CitizenManagement wargaList={wargaList} requests={requests} currentUser={currentUser} onAddWarga={async (w) => {
+          try {
+            const res = await fetch('/api/warga', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(w)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setWargaList([...wargaList, data]);
+            }
+          } catch (error) {
+            handleShowToast("Gagal menambah warga.", "error");
+          }
+      }} onUpdateWarga={handleUpdateWarga} onDeleteWarga={async (id) => {
+          // Need DELETE endpoint for warga too, but for now let's just filter locally or add it later
+          setWargaList(wargaList.filter(w => w.id !== id));
+      }} onUpdateRequestStatus={handleUpdateRequestStatus} onShowToast={handleShowToast} onNavigate={setCurrentView} onLogActivity={handleAddLog} />;
       case 'KEUANGAN': return <Finance keuanganList={keuanganList} wargaList={wargaList} onAddTransaksi={handleAddTransaksi} onDeleteTransaksi={handleDeleteTransaksi} onSendNotification={handleAddNotification} currentUser={currentUser} onShowToast={handleShowToast} appConfig={appConfig} onUpdateAppConfig={handleUpdateAppConfig} />;
       case 'SURAT': return <LetterGenerator wargaList={wargaList} onSendNotification={handleAddNotification} onShowToast={handleShowToast} />;
       case 'AI_ASSISTANT': return <AIAssistant wargaList={wargaList} onSendNotification={handleAddNotification} currentUser={currentUser} />;
