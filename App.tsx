@@ -88,9 +88,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
   const [targetResetUserId, setTargetResetUserId] = useState<string | null>(null);
 
   // Registration Flow State
-  const [registerStep, setRegisterStep] = useState<'INPUT_DATA' | 'VERIFY_EMAIL'>('INPUT_DATA');
-  const [registerOtp, setRegisterOtp] = useState('');
-  const [generatedRegisterOtp, setGeneratedRegisterOtp] = useState('');
+  const [registerStep, setRegisterStep] = useState<'INPUT_DATA'>('INPUT_DATA');
 
   const [formData, setFormData] = useState({
     nik: '',
@@ -151,7 +149,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
     }
   };
 
-  const handleInitiateRegister = (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (wargaList.find(w => w.nik === formData.nik)) {
       onShowToast("NIK sudah terdaftar dalam sistem.", 'error');
@@ -162,83 +160,33 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
         return;
     }
 
-    // Generate OTP for Email Verification
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedRegisterOtp(code);
-    
-    // Simulate Sending OTP
-    alert(`[SIMULASI EMAIL]\n\nKode Verifikasi Pendaftaran: ${code}\n\nDikirim ke: ${formData.email}`);
-    
-    setRegisterStep('VERIFY_EMAIL');
-    onShowToast("Kode verifikasi telah dikirim ke Email Anda.", "success");
+    const newWarga: Warga = {
+      id: `warga-${Date.now()}`,
+      noKK: '',
+      nik: formData.nik,
+      namaLengkap: formData.namaLengkap,
+      jenisKelamin: formData.jenisKelamin,
+      tempatLahir: '',
+      tanggalLahir: '2000-01-01',
+      agama: Agama.ISLAM,
+      pekerjaan: '',
+      statusPerkawinan: StatusPerkawinan.BELUM_KAWIN,
+      noHP: formData.noHP,
+      email: formData.email,
+      isKepalaKeluarga: false,
+      role: UserRole.WARGA,
+      statusKependudukan: "AKTIF",
+      isVerified: false, 
+      isDataComplete: false,
+      joinedAt: new Date().toISOString().split('T')[0],
+      password: formData.password || '123456',
+    };
+
+    onRegister(newWarga);
+    onShowToast("Pendaftaran berhasil! Silakan lengkapi data diri Anda.", "success");
   };
 
-  const handleFinalizeRegister = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (registerOtp !== generatedRegisterOtp) {
-          onShowToast("Kode verifikasi salah.", "error");
-          return;
-      }
 
-      const newWarga: Warga = {
-        id: `warga-${Date.now()}`,
-        noKK: '',
-        nik: formData.nik,
-        namaLengkap: formData.namaLengkap,
-        jenisKelamin: formData.jenisKelamin,
-        tempatLahir: '',
-        tanggalLahir: '2000-01-01',
-        agama: Agama.ISLAM,
-        pekerjaan: '',
-        statusPerkawinan: StatusPerkawinan.BELUM_KAWIN,
-        noHP: formData.noHP,
-        email: formData.email,
-        isKepalaKeluarga: false,
-        role: UserRole.WARGA,
-        statusKependudukan: "AKTIF",
-        isVerified: false, // Account created but inactive, waiting for admin approval
-        isDataComplete: false,
-        joinedAt: new Date().toISOString().split('T')[0],
-        password: formData.password || '123456',
-      };
-  
-      onRegister(newWarga);
-      onShowToast("Pendaftaran berhasil! Email terverifikasi. Menunggu persetujuan Admin.", "success");
-      // Reset form
-      setRegisterStep('INPUT_DATA');
-      setRegisterOtp('');
-      setFormData({
-          nik: '',
-          namaLengkap: '',
-          noHP: '',
-          email: '',
-          jenisKelamin: Gender.LAKI_LAKI,
-          password: '',
-      });
-      // Switch to login mode or stay to show message? 
-      // Usually redirect to login with message. 
-      // onRegister in parent sets state to APP, which logs them in automatically in current implementation.
-      // But wait, isVerified is false. So they will be logged in but restricted?
-      // Let's check App.tsx logic.
-      // onRegister sets currentUser.
-      // If currentUser.isVerified is false, what happens?
-      // In App.tsx: if (!currentUser) return AuthScreen.
-      // If currentUser exists, it renders content.
-      // But handleLogin checks isVerified.
-      // onRegister bypasses handleLogin check in the current implementation:
-      // onRegister={(w) => { setWargaList([...wargaList, w]); setCurrentUserId(w.id); setAppState('APP'); setCurrentView(ViewState.MY_PROFILE); }}
-      // So they get logged in immediately even if isVerified=false.
-      // We should probably NOT log them in automatically if isVerified is false, OR we let them in but show restricted view.
-      // The user request says "sebelum akunnya aktif".
-      // So we should probably NOT log them in automatically.
-      // I will update the parent onRegister logic later if needed, but for now let's stick to the requested flow.
-      // Actually, if I change onRegister behavior in AuthScreen, I might break the parent's expectation.
-      // But wait, the parent passes `onRegister`.
-      // If I call `onRegister`, the parent executes: `setCurrentUserId(w.id); setAppState('APP');`
-      // This logs them in.
-      // If we want "waiting for admin", we should probably NOT log them in.
-      // But for now, let's implement the email verification.
-  };
 
   const handleRequestReset = (e: React.FormEvent) => {
       e.preventDefault();
@@ -313,14 +261,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
 
             <form onSubmit={
                 mode === 'LOGIN' ? handleLogin : 
-                mode === 'REGISTER' && registerStep === 'INPUT_DATA' ? handleInitiateRegister : 
-                mode === 'REGISTER' && registerStep === 'VERIFY_EMAIL' ? handleFinalizeRegister :
+                mode === 'REGISTER' ? handleRegister : 
                 mode === 'FORGOT_PASSWORD' && resetStep === 'INPUT_ID' ? handleRequestReset : 
                 mode === 'FORGOT_PASSWORD' && resetStep === 'VERIFY_OTP' ? handleVerifyOtp : 
                 handleSaveNewPassword
             } className="space-y-4">
             
-            {mode === 'REGISTER' && registerStep === 'INPUT_DATA' && (
+            {mode === 'REGISTER' && (
                 <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Nama Lengkap</label>
                 <input 
@@ -334,7 +281,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
                 </div>
             )}
             
-            {mode !== 'FORGOT_PASSWORD' && !(mode === 'REGISTER' && registerStep === 'VERIFY_EMAIL') && (
+            {mode !== 'FORGOT_PASSWORD' && (
                 <>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{mode === 'LOGIN' ? 'NIK / Email / No HP' : 'NIK'}</label>
@@ -362,7 +309,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
                 </>
             )}
 
-            {mode === 'REGISTER' && registerStep === 'INPUT_DATA' && (
+            {mode === 'REGISTER' && (
                 <>
                 <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Email Aktif</label>
@@ -477,8 +424,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
 
             <button type="submit" className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 dark:shadow-none mt-2">
                 {mode === 'LOGIN' ? 'Masuk Sekarang' : 
-                 mode === 'REGISTER' && registerStep === 'INPUT_DATA' ? 'Daftar & Verifikasi Email' : 
-                 mode === 'REGISTER' && registerStep === 'VERIFY_EMAIL' ? 'Verifikasi & Buat Akun' :
+                 mode === 'REGISTER' ? 'Daftar Sekarang' : 
                  mode === 'FORGOT_PASSWORD' && resetStep === 'INPUT_ID' ? 'Kirim Kode OTP' : 
                  mode === 'FORGOT_PASSWORD' && resetStep === 'VERIFY_OTP' ? 'Verifikasi OTP' : 'Simpan Password Baru'}
             </button>
@@ -867,15 +813,9 @@ const App: React.FC = () => {
                 if (res.ok) {
                   const data = await res.json();
                   setWargaList([...wargaList, data]); 
-                  
-                  if (data.isVerified) {
-                    setCurrentUserId(data.id); 
-                    setAppState('APP'); 
-                    setCurrentView("PROFIL_SAYA"); 
-                  } else {
-                    // Stay on login/register screen but switch to login mode
-                    setAppState('LOGIN');
-                  }
+                  setCurrentUserId(data.id); 
+                  setAppState('APP'); 
+                  setCurrentView("PROFIL_SAYA"); 
                 }
               } catch (error) {
                 handleShowToast("Gagal mendaftar.", "error");
@@ -894,8 +834,8 @@ const App: React.FC = () => {
   if (!currentUser) return null;
 
   const isAdmin = [UserRole.SUPER_ADMIN, UserRole.KETUA_RT, UserRole.SEKRETARIS].includes(currentUser.role);
-  const isDataIncomplete = currentUser.role === UserRole.WARGA && !currentUser.isDataComplete;
-  if (isDataIncomplete && currentView !== 'PROFIL_SAYA') setCurrentView('PROFIL_SAYA');
+  const isRestricted = currentUser.role === UserRole.WARGA && (!currentUser.isDataComplete || !currentUser.isVerified);
+  if (isRestricted && currentView !== 'PROFIL_SAYA') setCurrentView('PROFIL_SAYA');
 
   const renderContent = () => {
     switch (currentView) {
@@ -948,18 +888,31 @@ const App: React.FC = () => {
     }
   };
 
-  const NavItem = ({ view, label, icon }: { view: ViewState, label: string, icon: React.ReactNode }) => (
-    <button 
-      onClick={() => { setCurrentView(view); setIsMobileMenuOpen(false); }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-        currentView === view 
-          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 dark:shadow-none' 
-          : 'text-gray-600 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300'
-      }`}
-    >
-      {icon} <span>{label}</span>
-    </button>
-  );
+  const NavItem = ({ view, label, icon }: { view: ViewState, label: string, icon: React.ReactNode }) => {
+    const isDisabled = isRestricted && view !== 'PROFIL_SAYA';
+    
+    return (
+      <button 
+        onClick={() => { 
+          if (isDisabled) {
+            handleShowToast("Mohon lengkapi data diri dan tunggu verifikasi Admin untuk akses fitur ini.", "error");
+            return;
+          }
+          setCurrentView(view); 
+          setIsMobileMenuOpen(false); 
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+          currentView === view 
+            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 dark:shadow-none' 
+            : isDisabled
+              ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed opacity-50'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300'
+        }`}
+      >
+        {icon} <span>{label}</span>
+      </button>
+    );
+  };
 
   return (
     <div className={`flex h-screen bg-gray-100 dark:bg-gray-950 font-sans text-gray-800 dark:text-gray-100 transition-colors duration-200`}>

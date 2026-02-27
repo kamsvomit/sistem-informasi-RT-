@@ -36,10 +36,6 @@ async function startServer() {
         return res.status(401).json({ error: "Password salah" });
       }
 
-      if (!user.isVerified && user.role !== 'Super Admin') {
-        return res.status(403).json({ error: "Akun Anda belum aktif atau dinonaktifkan oleh Admin." });
-      }
-
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: "Login failed" });
