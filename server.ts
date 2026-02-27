@@ -15,6 +15,37 @@ async function startServer() {
   // --- API ROUTES ---
 
   // Auth & Warga
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { identifier, password } = req.body;
+      const user = await prisma.warga.findFirst({
+        where: {
+          OR: [
+            { nik: identifier },
+            { email: identifier },
+            { noHP: identifier }
+          ]
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "Identitas tidak ditemukan" });
+      }
+
+      if (user.password !== password) {
+        return res.status(401).json({ error: "Password salah" });
+      }
+
+      if (!user.isVerified && user.role !== 'Super Admin') {
+        return res.status(403).json({ error: "Akun Anda belum aktif atau dinonaktifkan oleh Admin." });
+      }
+
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
   app.get("/api/warga", async (req, res) => {
     try {
       const warga = await prisma.warga.findMany();

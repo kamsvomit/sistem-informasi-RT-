@@ -101,33 +101,53 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialMode, onLogin, onRegiste
     password: '',
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = wargaList.find(w => w.nik === formData.nik || w.noHP === formData.nik || w.email === formData.nik);
-    if (user) {
-      if (!user.isVerified) {
-          onShowToast("Akun Anda belum aktif atau dinonaktifkan oleh Admin.", 'error');
-          return;
-      }
-      
-      // Password Check
-      if (user.password && user.password !== formData.password) {
-          onShowToast("Password salah.", 'error');
-          return;
-      }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: formData.nik,
+          password: formData.password
+        })
+      });
 
-      onLogin(user.id);
-      onShowToast(`Selamat datang kembali, ${user.namaLengkap}!`, 'success');
-    } else {
-      onShowToast("Identitas (NIK/No HP/Email) tidak ditemukan.", 'error');
+      const data = await res.json();
+
+      if (res.ok) {
+        onLogin(data.id);
+        onShowToast(`Selamat datang kembali, ${data.namaLengkap}!`, 'success');
+      } else {
+        onShowToast(data.error || "Login gagal", 'error');
+      }
+    } catch (error) {
+      onShowToast("Terjadi kesalahan koneksi.", 'error');
     }
   };
 
-  const handleQuickLogin = (role: UserRole) => {
+  const handleQuickLogin = async (role: UserRole) => {
     const demoUser = wargaList.find(w => w.role === role);
     if (demoUser) {
-        onLogin(demoUser.id);
-        onShowToast(`Login Demo sebagai ${role}: ${demoUser.namaLengkap}`, 'success');
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              identifier: demoUser.nik,
+              password: demoUser.password || '123456'
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            onLogin(data.id);
+            onShowToast(`Login Demo sebagai ${role}: ${data.namaLengkap}`, 'success');
+          } else {
+            onShowToast(data.error || "Login demo gagal", 'error');
+          }
+        } catch (error) {
+          onShowToast("Gagal login demo.", 'error');
+        }
     }
   };
 
@@ -847,9 +867,15 @@ const App: React.FC = () => {
                 if (res.ok) {
                   const data = await res.json();
                   setWargaList([...wargaList, data]); 
-                  setCurrentUserId(data.id); 
-                  setAppState('APP'); 
-                  setCurrentView("PROFIL_SAYA"); 
+                  
+                  if (data.isVerified) {
+                    setCurrentUserId(data.id); 
+                    setAppState('APP'); 
+                    setCurrentView("PROFIL_SAYA"); 
+                  } else {
+                    // Stay on login/register screen but switch to login mode
+                    setAppState('LOGIN');
+                  }
                 }
               } catch (error) {
                 handleShowToast("Gagal mendaftar.", "error");
