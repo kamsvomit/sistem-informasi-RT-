@@ -1,7 +1,20 @@
 {
   "buildCommand": "prisma generate && vite build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@4.0.0"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/warga/:id",
+      "destination": "/api/warga/[id]"
+    },
+    {
+      "source": "/api/keuangan/:id",
+      "destination": "/api/keuangan/[id]"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
