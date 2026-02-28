@@ -702,7 +702,7 @@ const App: React.FC = () => {
         handleShowToast(`Akun ${warga.namaLengkap} berhasil diverifikasi.`, 'success');
       } catch (error) {
         console.error('Approve catch:', error);
-        handleShowToast(`Gagal memverifikasi akun.`, 'error');
+        handleShowToast(`Gagal: ${JSON.stringify(error)}`, 'error');
       }
   };
 
