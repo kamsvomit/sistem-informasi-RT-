@@ -6,11 +6,9 @@ const prisma = new PrismaClient();
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query as { id: string };
 
-  try {
-    if (req.method === 'PUT') {
+  if (req.method === 'PUT') {
+    try {
       const body = req.body;
-      
-      // Filter hanya field yang ada di schema Prisma
       const allowedFields = [
         'noKK', 'nik', 'namaLengkap', 'jenisKelamin', 'tempatLahir',
         'tanggalLahir', 'agama', 'pekerjaan', 'statusPerkawinan', 'noHP',
@@ -27,23 +25,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      const updated = await prisma.warga.update({
-        where: { id },
-        data
-      });
-      return res.json(updated);
+      const updated = await prisma.warga.update({ where: { id }, data });
+      return res.status(200).json(updated);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: String(error) });
+    } finally {
+      await prisma.$disconnect();
     }
-
-    if (req.method === 'DELETE') {
-      await prisma.warga.delete({ where: { id } });
-      return res.json({ success: true });
-    }
-
-    res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('Warga update error:', error);
-    res.status(500).json({ error: String(error) });
-  } finally {
-    await prisma.$disconnect();
   }
-        }
+
+  if (req.method === 'DELETE') {
+    try {
+      await prisma.warga.delete({ where: { id } });
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: String(error) });
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+            }
