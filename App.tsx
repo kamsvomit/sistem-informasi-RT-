@@ -676,34 +676,50 @@ const App: React.FC = () => {
     }
   };
 
-  const handleApproveAccount = (warga: Warga) => {
+  const handleApproveAccount = async (warga: Warga) => {
       const updated = { ...warga, isVerified: true };
-      setWargaList(prev => prev.map(w => w.id === warga.id ? updated : w));
-      
-      handleAddNotification({
-          id: `ACC-APP-${Date.now()}`,
-          userId: warga.id,
-          pesan: "🎉 Selamat! Akun Anda telah diverifikasi oleh pengurus RT. Anda kini memiliki akses penuh ke fitur aplikasi.",
-          tipe: 'SYSTEM',
-          isRead: false,
-          tanggal: new Date().toISOString().split('T')[0]
-      });
-      handleShowToast(`Akun ${warga.namaLengkap} berhasil diverifikasi.`, 'success');
+      try {
+        await fetch(`/api/warga/${warga.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        setWargaList(prev => prev.map(w => w.id === warga.id ? updated : w));
+        handleAddNotification({
+            id: `ACC-APP-${Date.now()}`,
+            userId: warga.id,
+            pesan: "🎉 Selamat! Akun Anda telah diverifikasi oleh pengurus RT. Anda kini memiliki akses penuh ke fitur aplikasi.",
+            tipe: 'SYSTEM',
+            isRead: false,
+            tanggal: new Date().toISOString().split('T')[0]
+        });
+        handleShowToast(`Akun ${warga.namaLengkap} berhasil diverifikasi.`, 'success');
+      } catch (error) {
+        handleShowToast(`Gagal memverifikasi akun.`, 'error');
+      }
   };
 
-  const handleRejectAccount = (warga: Warga, reason: string) => {
+  const handleRejectAccount = async (warga: Warga, reason: string) => {
       const updated = { ...warga, isDataComplete: false };
-      setWargaList(prev => prev.map(w => w.id === warga.id ? updated : w));
-      
-      handleAddNotification({
-          id: `ACC-REJ-${Date.now()}`,
-          userId: warga.id,
-          pesan: `❌ Verifikasi Akun Ditolak: ${reason}. Mohon periksa kembali data profil & dokumen Anda.`,
-          tipe: 'SYSTEM',
-          isRead: false,
-          tanggal: new Date().toISOString().split('T')[0]
-      });
-      handleShowToast(`Persetujuan akun ${warga.namaLengkap} ditolak.`, 'error');
+      try {
+        await fetch(`/api/warga/${warga.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        setWargaList(prev => prev.map(w => w.id === warga.id ? updated : w));
+        handleAddNotification({
+            id: `ACC-REJ-${Date.now()}`,
+            userId: warga.id,
+            pesan: `❌ Verifikasi Akun Ditolak: ${reason}. Mohon periksa kembali data profil & dokumen Anda.`,
+            tipe: 'SYSTEM',
+            isRead: false,
+            tanggal: new Date().toISOString().split('T')[0]
+        });
+        handleShowToast(`Persetujuan akun ${warga.namaLengkap} ditolak.`, 'error');
+      } catch (error) {
+        handleShowToast(`Gagal menolak akun.`, 'error');
+      }
   };
 
   const handleAddTransaksi = async (trx: Keuangan) => {
